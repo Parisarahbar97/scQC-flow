@@ -14,7 +14,6 @@ process CELLBENDER {
 
   script:
   """
-  set -euo pipefail
   echo "Running CellBender (CPU) for sample: ${sampleName}"
   echo "Mapping directory: ${mappingDir}"
 
@@ -24,13 +23,10 @@ process CELLBENDER {
     --input  "${mappingDir}/outs/raw_feature_bc_matrix.h5" \\
     --output "${sampleName}_cellbender_output/cellbender_out.h5"
 
-  {
-    echo "CellBender (CPU) completed"
-    echo "sample: ${sampleName}"
-    echo "note: ran with CellBender defaults (no expected-cells / TDI / fpr / epochs specified)"
-  } > "${sampleName}_cellbender_output/summary.txt"
+   
+    echo "CellBender processing completed" > ${sampleName}_cellbender_output/summary.txt
+    echo "CellBender (CPU) completed for ${sampleName}"
 
-  echo "CellBender (CPU) completed for ${sampleName}"
   """
 }
 
@@ -50,7 +46,6 @@ process CELLBENDER_GPU {
 
   script:
   """
-  set -euo pipefail
   echo "Running CellBender (GPU) for sample: ${sampleName}"
   echo "Mapping directory: ${mappingDir}"
 
@@ -61,13 +56,8 @@ process CELLBENDER_GPU {
     --output "${sampleName}_cellbender_output/cellbender_out.h5" \\
     --cuda
 
-  {
-    echo "CellBender (GPU) completed"
-    echo "sample: ${sampleName}"
-    echo "note: ran with CellBender defaults (no expected-cells / TDI / fpr / epochs specified)"
-  } > "${sampleName}_cellbender_output/summary.txt"
-
-  echo "CellBender (GPU) completed for ${sampleName}"
+    echo "CellBender processing completed" > ${sampleName}_cellbender_output/summary.txt
+    echo "CellBender (GPU) completed for ${sampleName}"
   """
 }
 
