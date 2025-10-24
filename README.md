@@ -93,6 +93,49 @@ The pipeline performs these key steps:
 
 ---
 
+## 📊 Aggregate QC Reporting (new)
+
+The script `scripts/qc_summary_report.R` summarises the pre/post QC Seurat objects produced by the pipeline and creates CSV tables, markdown summaries, and bar charts. A companion Docker image ensures the required R packages (Seurat, tidyverse, optparse, etc.) are available out-of-the-box.
+
+### Build the container
+
+```bash
+docker build -t scqc-flow-report .
+```
+
+### Generate reports for a cohort
+
+Bind-mount the project (for the script) and the directories that contain the per-sample outputs:
+
+```bash
+# Healthy cohort example
+docker run --rm \
+  -v /home/pr422/RDS/live/Users/Parisa/scQC-flow:/workspace \
+  -v /home/pr422/RDS/live/Users/Parisa/EPILEP:/data \
+  scqc-flow-report \
+  --input /data/healthy/qc/output_latest \
+  --output /data/QC_reports \
+  --label healthy
+
+# Diseased cohort example
+docker run --rm \
+  -v /home/pr422/RDS/live/Users/Parisa/scQC-flow:/workspace \
+  -v /home/pr422/RDS/live/Users/Parisa/EPILEP:/data \
+  scqc-flow-report \
+  --input /data/diseased/qc/output_latest \
+  --output /data/QC_reports \
+  --label diseased
+```
+
+Each run writes:
+- `*_qc_summary_per_sample.csv`, `*_qc_breakdown_per_sample.csv`, `*_qc_totals_all_samples.csv`, `*_qc_breakdown_totals.csv`
+- `*_cells_after_qc_per_sample.png`
+- `*_qc_summary_report.md`
+
+The `--max-mito`, `--min-nuclear`, `--min-features`, and `--min-counts` CLI flags mirror the thresholds used during QC and default to the pipeline's recommended values.
+
+---
+
 ## ⚠️ Notes & Warnings
 
 > **System Requirements**: This pipeline is computationally intensive and best run on HPC systems. It is optimized for the Imperial College HPC system but can be adapted to other systems with sufficient resources.
@@ -113,4 +156,3 @@ This pipeline is maintained in a public repository:
 For questions or issues, please:
 - Open an issue on the [GitHub repository](https://github.com/johnsonlab-ic/scQC-flow/issues)
 - Contact the Johnson Lab at Imperial College London
-
