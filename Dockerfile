@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.source="https://github.com/Parisarahbar97/scQC-fl
 
 ENV RENV_DEFAULT_REPOS=https://cloud.r-project.org
 
-RUN R -e "pkgs <- c('optparse','patchwork','scales','stringr','knitr','readr','dplyr','tidyr','ggplot2','purrr','tibble'); to_install <- setdiff(pkgs, rownames(installed.packages())); if (length(to_install) > 0) install.packages(to_install, repos='https://cloud.r-project.org')"
+RUN R -e "pkgs <- c('optparse','patchwork','scales','knitr','readr','dplyr','tidyr','ggplot2','purrr','tibble'); to_install <- setdiff(pkgs, rownames(installed.packages())); if (length(to_install) > 0) install.packages(to_install, repos='https://cloud.r-project.org')"
 
 WORKDIR /workspace
 

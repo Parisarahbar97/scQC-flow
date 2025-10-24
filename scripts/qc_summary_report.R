@@ -9,7 +9,6 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(knitr)
   library(purrr)
-  library(stringr)
   library(scales)
 })
 
