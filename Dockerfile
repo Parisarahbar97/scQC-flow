@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     libxml2-dev \
     libhdf5-dev \
+    libfftw3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ENV RENV_DEFAULT_REPOS=https://cloud.r-project.org
