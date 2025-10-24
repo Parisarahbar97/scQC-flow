@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV RENV_DEFAULT_REPOS=https://cloud.r-project.org
-ENV CRAN_MIRROR=https://packagemanager.posit.co/cran/__linux__/jammy/latest
+ENV CRAN_MIRROR=https://cloud.r-project.org
 
 RUN R -e "options(repos='${CRAN_MIRROR}'); install.packages(c('optparse','Seurat','SeuratDisk','patchwork','scales','stringr','knitr'), dependencies=TRUE)"
 
