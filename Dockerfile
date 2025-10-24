@@ -13,5 +13,5 @@ WORKDIR /workspace
 COPY scripts/qc_summary_report.R /usr/local/bin/qc_summary_report.R
 RUN chmod +x /usr/local/bin/qc_summary_report.R
 
-ENTRYPOINT [\"Rscript\", \"/usr/local/bin/qc_summary_report.R\"]
-CMD [\"--help\"]
+ENTRYPOINT ["Rscript", "/usr/local/bin/qc_summary_report.R"]
+CMD ["--help"]
