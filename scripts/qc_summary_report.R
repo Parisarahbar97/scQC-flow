@@ -87,13 +87,18 @@ for (i in seq_along(samples)) {
   pre <- readRDS(pre_rds[i])
   post <- readRDS(post_rds[i])
 
-  pre_n <- ncol(pre)
-  if (length(pre_n) == 0 || is.na(pre_n)) pre_n <- 0L
-  post_n <- ncol(post)
-  if (length(post_n) == 0 || is.na(post_n)) post_n <- 0L
+  pre_md <- pre@meta.data
+  if (is.null(pre_md)) pre_md <- data.frame()
+  post_md <- post@meta.data
+  if (is.null(post_md)) post_md <- data.frame()
+
+  pre_n <- nrow(pre_md)
+  if (is.null(pre_n) || length(pre_n) == 0 || is.na(pre_n)) pre_n <- 0L
+  post_n <- nrow(post_md)
+  if (is.null(post_n) || length(post_n) == 0 || is.na(post_n)) post_n <- 0L
   lost <- pre_n - post_n
 
-  md <- pre@meta.data
+  md <- pre_md
 
   doublet_flag <- if (!is.null(md$doublet_class)) md$doublet_class == "doublet" else rep(FALSE, pre_n)
   nuclear_frac <- gcol(md, c("nuclear_fraction", "NuclearFraction", "nucleic_fraction"))
@@ -111,7 +116,7 @@ for (i in seq_along(samples)) {
     Low.Counts = sum(low_counts, na.rm = TRUE)
   )
 
-  lost_barcodes <- setdiff(colnames(pre), colnames(post))
+  lost_barcodes <- setdiff(rownames(pre_md), rownames(post_md))
   if (length(lost_barcodes) > 0) {
     lost_df <- data.frame(
       bc = lost_barcodes,
