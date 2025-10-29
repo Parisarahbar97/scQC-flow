@@ -101,6 +101,19 @@ if (!counts_split) {
 }
 
 set.seed(opts$seed)
+
+if (requireNamespace("future", quietly = TRUE)) {
+  old_plan <- future::plan()
+  old_max <- getOption("future.globals.maxSize")
+  future::plan("sequential")
+  options(future.globals.maxSize = Inf)
+  on.exit({
+    options(future.globals.maxSize = old_max)
+    do.call(future::plan, list(old_plan))
+  }, add = TRUE)
+} else {
+  message("Package 'future' not available; proceeding without adjusting parallel plan.")
+}
 merged <- NormalizeData(merged)
 merged <- FindVariableFeatures(merged, nfeatures = opts$`variable-features`)
 merged <- ScaleData(merged)
