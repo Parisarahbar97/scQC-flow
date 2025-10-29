@@ -135,6 +135,31 @@ Each run writes:
 
 The `--max-mito`, `--min-nuclear`, `--min-features`, and `--min-counts` CLI flags mirror the thresholds used during QC and default to the pipeline's recommended values.
 
+### Harmony Integration & Leiden clustering
+
+Use `scripts/harmony_integration.R` to merge the post-QC Seurat objects, perform Harmony integration, run Leiden clustering, generate UMAPs, and export an AnnData copy. The script is container-friendly; the example below uses the Johnson Lab Landmark image you referenced, mounting the project plus healthy/diseased QC outputs:
+
+```bash
+docker run --rm \
+  -v /home/pr422/RDS/live/Users/Parisa/scQC-flow:/workspace \
+  -v /home/pr422/RDS/live/Users/Parisa/EPILEP:/data \
+  -w /workspace \
+  ghcr.io/johnsonlab-ic/landmark-sc_image:with-scanpy \
+  Rscript scripts/harmony_integration.R \
+    --healthy /data/healthy/qc/output_latest \
+    --diseased /data/diseased/qc/output_latest \
+    --output /data/harmony_integration \
+    --dims 50 \
+    --resolution 0.2
+```
+
+Outputs written to `--output` (e.g. `/home/pr422/RDS/live/Users/Parisa/EPILEP/harmony_integration`) include:
+- `integrated_harmony_seurat.rds` (integrated Seurat object)
+- `integrated_harmony_seurat.h5seurat` and `integrated_harmony_seurat.h5ad` (if SeuratDisk available)
+- `integrated_metadata_with_umap.csv` (metadata + UMAP coordinates)
+- UMAP PNGs coloured by clusters, cohort, and sample
+- `integration_summary.txt` logging key parameters
+
 ---
 
 ## ⚠️ Notes & Warnings
