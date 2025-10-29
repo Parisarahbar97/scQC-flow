@@ -124,15 +124,39 @@ if (ok_sw && exists("HarmonyIntegration")) {
   )
 } else {
   message("SeuratWrappers not found; falling back to harmony::RunHarmony ...")
-  merged <- harmony::RunHarmony(
-    merged,
-    group.by.vars = c("Sample_ID", "Cohort"),
-    reduction = "pca",
-    dims.use = 1:opts$dims,
-    assay.use = opts$assay,
-    project.dim = FALSE,
+  hm_fun <- getS3method("RunHarmony", "Seurat")
+  hm_args <- names(formals(hm_fun))
+
+  hm_call <- list(
+    object = merged,
+    `group.by.vars` = c("Sample_ID", "Cohort"),
     verbose = TRUE
   )
+
+  if ("reduction" %in% hm_args) {
+    hm_call$reduction <- "pca"
+  } else {
+    hm_call$`reduction.use` <- "pca"
+    if ("reduction.save" %in% hm_args) {
+      hm_call$`reduction.save` <- "harmony"
+    }
+  }
+
+  if ("dims.use" %in% hm_args) {
+    hm_call$`dims.use` <- 1:opts$dims
+  } else {
+    hm_call$dims <- 1:opts$dims
+  }
+
+  if ("assay.use" %in% hm_args) {
+    hm_call$`assay.use` <- opts$assay
+  } else if ("assay" %in% hm_args) {
+    hm_call$assay <- opts$assay
+  }
+
+  hm_call$`project.dim` <- FALSE
+
+  merged <- do.call(harmony::RunHarmony, hm_call)
 }
 
 if (!reduction_to_use %in% Reductions(merged)) {
