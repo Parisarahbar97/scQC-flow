@@ -130,6 +130,7 @@ docker run --rm \
 Each run writes:
 - `*_qc_summary_per_sample.csv`, `*_qc_breakdown_per_sample.csv`, `*_qc_totals_all_samples.csv`, `*_qc_breakdown_totals.csv`
 - `*_cells_after_qc_per_sample.png`
+- `*_cells_pre_vs_post_per_sample.png`
 - `*_qc_summary_report.md`
 
 The `--max-mito`, `--min-nuclear`, `--min-features`, and `--min-counts` CLI flags mirror the thresholds used during QC and default to the pipeline's recommended values.

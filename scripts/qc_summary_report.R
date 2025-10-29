@@ -246,6 +246,50 @@ ggsave(
   dpi = opts$dpi
 )
 
+comparison_tbl <- summary_tbl %>%
+  select(sample, pre_cells, post_cells) %>%
+  pivot_longer(cols = c(pre_cells, post_cells), names_to = "stage", values_to = "cells") %>%
+  mutate(
+    stage = recode(stage, pre_cells = "Pre-QC", post_cells = "Post-QC"),
+    stage = factor(stage, levels = c("Pre-QC", "Post-QC"))
+  )
+
+comparison_title <- if (!is.null(label) && nzchar(label)) {
+  paste0("Pre- vs Post-QC Cells (", label, ")")
+} else {
+  "Pre- vs Post-QC Cells"
+}
+
+p_compare <- ggplot(comparison_tbl, aes(x = sample, y = cells, fill = stage)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_text(
+    aes(label = comma(cells)),
+    position = position_dodge(width = 0.8),
+    vjust = -0.3,
+    size = 3,
+    color = "#1F1F1F"
+  ) +
+  labs(
+    title = comparison_title,
+    x = "Sample",
+    y = "Number of cells",
+    fill = "Stage"
+  ) +
+  scale_y_continuous(labels = comma) +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+
+ggsave(
+  filename = file.path(output_dir, paste0(prefix, "cells_pre_vs_post_per_sample.png")),
+  plot = p_compare,
+  width = opts$`plot-width`,
+  height = opts$`plot-height`,
+  dpi = opts$dpi
+)
+
 md_path <- file.path(output_dir, paste0(prefix, "qc_summary_report.md"))
 
 summary_tbl_pretty <- summary_tbl %>%
@@ -283,7 +327,14 @@ cat("\n\n")
 
 cat("## Reasons for filtering (exclusive counts)\n\n")
 print(kable(breakdown_exclusive_wide, format = "pipe"))
-cat("\n\n![Cells after QC](", paste0(prefix, "cells_after_qc_per_sample.png"), ")\n", sep = "")
+cat(
+  "\n\n![Cells after QC](",
+  paste0(prefix, "cells_after_qc_per_sample.png"),
+  ")\n\n![Pre- vs Post-QC cells](",
+  paste0(prefix, "cells_pre_vs_post_per_sample.png"),
+  ")\n",
+  sep = ""
+)
 sink()
 
 message("All artefacts written to: ", normalizePath(output_dir))
