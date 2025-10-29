@@ -124,7 +124,10 @@ if (ok_sw && exists("HarmonyIntegration")) {
   )
 } else {
   message("SeuratWrappers not found; falling back to harmony::RunHarmony ...")
-  hm_fun <- getS3method("RunHarmony", "Seurat")
+  hm_fun <- getS3method("RunHarmony", "Seurat", optional = TRUE)
+  if (is.null(hm_fun)) {
+    hm_fun <- harmony::RunHarmony
+  }
   hm_args <- names(formals(hm_fun))
 
   hm_call <- list(
@@ -154,9 +157,11 @@ if (ok_sw && exists("HarmonyIntegration")) {
     hm_call$assay <- opts$assay
   }
 
-  hm_call$`project.dim` <- FALSE
+  if ("project.dim" %in% hm_args) {
+    hm_call$`project.dim` <- FALSE
+  }
 
-  merged <- do.call(harmony::RunHarmony, hm_call)
+  merged <- do.call(hm_fun, hm_call)
 }
 
 if (!reduction_to_use %in% Reductions(merged)) {
