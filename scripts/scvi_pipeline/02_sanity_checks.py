@@ -62,6 +62,15 @@ def main():
     h5ads = sorted(list((args.inputs_root / 'h5ad_files').glob('**/*_postqc.h5ad')))
     results = [check_file(p) for p in h5ads]
 
+    if not results:
+        msg = (
+            "No *_postqc.h5ad files found under inputs/h5ad_files. "
+            "Run 01_build_per_sample_h5ad.py first."
+        )
+        (args.inputs_root / 'sanity_report.txt').write_text(msg + '\n')
+        print(msg)
+        return
+
     df = pd.DataFrame(results)
     df.to_csv(args.inputs_root / 'sanity_report.tsv', sep='\t', index=False)
 
@@ -104,4 +113,3 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
-
