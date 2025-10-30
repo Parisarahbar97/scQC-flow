@@ -7,6 +7,7 @@ suppressPackageStartupMessages({
   library(SummarizedExperiment)
   library(scuttle)
   library(ExperimentHub)
+  library(AnnotationHub)
   library(dplyr)
   library(ggplot2)
 })
@@ -81,7 +82,7 @@ message("Test SCE dims: ", paste(dim(sce_test), collapse = " x "))
 # ----------------------------------------------------------------------
 message("Fetching humanHippocampus2024 reference (EH9606) ...")
 eh <- ExperimentHub::ExperimentHub()
-files <- ExperimentHub::query(eh, "humanHippocampus2024")
+files <- AnnotationHub::query(eh, "humanHippocampus2024")
 sce_ref <- files[["EH9606"]]
 message("Reference SCE dims: ", paste(dim(sce_ref), collapse = " x "))
 
