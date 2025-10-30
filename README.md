@@ -172,13 +172,16 @@ docker run --rm \
   ghcr.io/johnsonlab-ic/landmark-sc_image:with-scanpy \
   bash -lc 'Rscript -e "if (!requireNamespace(\"BiocManager\", quietly=TRUE)) install.packages(\"BiocManager\", repos=\"https://cloud.r-project.org\"); \
                     BiocManager::install(c(\"SingleR\",\"SummarizedExperiment\",\"SingleCellExperiment\",\"scuttle\",\"ExperimentHub\",\"humanHippocampus2024\"), ask=FALSE, update=FALSE); \
-                    install.packages(\"optparse\", repos=\"https://cloud.r-project.org\")" && \
+                    install.packages(c(\"optparse\",\"magick\"), repos=\"https://cloud.r-project.org\")" && \
             Rscript scripts/singler_annotation.R \
               --seurat /data/harmony_integration/integrated_harmony_seurat.rds \
               --output /data/singleR_annotation \
               --individual-col Sample_ID \
               --default-level mid.cell.class \
-              --ncores 1'
+              --cluster-col harmony_leiden \
+              --levels "cell.type2,mid.cell.class,broad.cell.class" \
+              --ncores 16 \
+              --bp-type multicore'
 ```
 
 Artifacts include:
@@ -186,6 +189,12 @@ Artifacts include:
 - Per-level label tables (`singleR_cells_*`, `singleR_counts_*`)
 - UMAPs coloured by each annotation level (`umap_singler_*`)
 - `singleR_summary.txt` documenting parameters
+
+Flags of interest:
+- `--cluster-col` (default `harmony_leiden`) lets SingleR annotate one cluster at a time (faster). Set to `''` for per-cell mode.
+- `--levels` accepts a comma-separated list so you can run coarse levels first.
+- `--ncores` + `--bp-type` control BiocParallel (use `snow` if fork isn't allowed).
+- `--fine-tune` / `--prune` mirror SingleR options when you need more refinement.
 
 ---
 

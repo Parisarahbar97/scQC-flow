@@ -132,59 +132,100 @@ sce_test_al <- aligned$test
 sce_ref_al  <- aligned$ref
 
 # ----------------------------------------------------------------------
-# Run SingleR at multiple annotation resolutions
+# Run SingleR at requested annotation resolutions
 # ----------------------------------------------------------------------
-label_cols <- c(
-  "cell.type2",
-  "superfine.cell.class",
-  "fine.cell.class",
-  "mid.cell.class",
-  "broad.cell.class"
-)
-
-missing_cols <- setdiff(label_cols, colnames(colData(sce_ref_al)))
-if (length(missing_cols)) {
-  stop("Reference is missing label columns: ", paste(missing_cols, collapse = ", "))
+choose_bp <- function(ncores, bp_type = "multicore") {
+  if (!requireNamespace("BiocParallel", quietly = TRUE)) {
+    stop("Package 'BiocParallel' is required.")
+  }
+  if (ncores > 1) {
+    if (bp_type == "multicore" && .Platform$OS.type != "windows") {
+      return(BiocParallel::MulticoreParam(workers = ncores))
+    } else {
+      return(BiocParallel::SnowParam(workers = ncores))
+    }
+  }
+  BiocParallel::SerialParam()
 }
 
-run_singler <- function(test_sce, ref_sce, labels, ncores = 1L) {
+run_singler <- function(test_sce, ref_sce, labels, clusters = NULL,
+                        ncores = 1L, fine_tune = FALSE, prune = TRUE, bp_type = "multicore") {
   if (!requireNamespace("SingleR", quietly = TRUE))
     stop("Package 'SingleR' is required.")
-  if (!requireNamespace("BiocParallel", quietly = TRUE))
-    stop("Package 'BiocParallel' is required.")
-
-  bp <- if (ncores > 1) {
-    BiocParallel::MulticoreParam(workers = ncores)
-  } else {
-    BiocParallel::SerialParam()
-  }
-
+  bp <- choose_bp(ncores, bp_type)
   SingleR::SingleR(
     test = test_sce,
     ref = ref_sce,
     labels = labels,
+    clusters = clusters,
     assay.type.test = "logcounts",
     assay.type.ref = "logcounts",
+    fine.tune = fine_tune,
+    prune = prune,
     BPPARAM = bp
   )
+}
+
+cluster_vec <- NULL
+if (nzchar(opts$`cluster-col`) &&
+    opts$`cluster-col` %in% colnames(SummarizedExperiment::colData(sce_test_al))) {
+  cluster_vec <- as.factor(SummarizedExperiment::colData(sce_test_al)[[opts$`cluster-col`]])
+  message("Using cluster-level SingleR on column: ", opts$`cluster-col`)
+} else if (nzchar(opts$`cluster-col`)) {
+  warning("Requested cluster-col '", opts$`cluster-col`, "' not found; running per-cell SingleR.")
+}
+
+label_cols <- trimws(unlist(strsplit(opts$levels, ",", fixed = TRUE)))
+valid_cols <- c("cell.type2","superfine.cell.class","fine.cell.class","mid.cell.class","broad.cell.class")
+if (length(setdiff(label_cols, valid_cols))) {
+  stop("Unknown levels in --levels; valid levels: ", paste(valid_cols, collapse = ", "))
+}
+missing_cols <- setdiff(label_cols, colnames(SummarizedExperiment::colData(sce_ref_al)))
+if (length(missing_cols)) {
+  stop("Reference is missing requested label columns: ", paste(missing_cols, collapse = ", "))
+}
+
+expand_cluster_result <- function(pred, cluster_vec) {
+  cl_map <- pred$labels
+  names(cl_map) <- rownames(pred)
+  per_cell_labels <- cl_map[as.character(cluster_vec)]
+  max_scores <- apply(pred$scores, 1, max, na.rm = TRUE)
+  names(max_scores) <- rownames(pred)
+  per_cell_scores <- max_scores[as.character(cluster_vec)]
+  list(labels = per_cell_labels, scores = per_cell_scores)
 }
 
 preds <- list()
 for (col in label_cols) {
   message("Running SingleR for level: ", col)
+  ref_labels <- SummarizedExperiment::colData(sce_ref_al)[[col]]
   pred <- run_singler(
     test_sce = sce_test_al,
-    ref_sce = sce_ref_al,
-    labels = colData(sce_ref_al)[[col]],
-    ncores = opts$ncores
+    ref_sce  = sce_ref_al,
+    labels   = ref_labels,
+    clusters = cluster_vec,
+    ncores   = opts$ncores,
+    fine_tune = opts$`fine-tune`,
+    prune     = opts$prune,
+    bp_type   = opts$`bp-type`
   )
+  if (!is.null(cluster_vec)) {
+    expanded <- expand_cluster_result(pred, cluster_vec)
+    pred$labels <- expanded$labels
+    attr(pred, "max_score_vec") <- expanded$scores
+    rownames(pred) <- colnames(sce_test_al)
+  }
   preds[[col]] <- pred
 }
 
 add_pred_to_meta <- function(seu, pred, prefix) {
   md <- seu@meta.data
   md[[paste0("singler_", prefix)]] <- pred$labels
-  md[[paste0("singler_", prefix, "_score")]] <- apply(pred$scores, 1, max, na.rm = TRUE)
+  if (!is.null(attr(pred, "max_score_vec"))) {
+    md[[paste0("singler_", prefix, "_score")]] <- attr(pred, "max_score_vec")
+  } else {
+    md[[paste0("singler_", prefix, "_score")]] <- apply(pred$scores, 1, max, na.rm = TRUE)
+  }
   seu@meta.data <- md
   seu
 }
@@ -224,10 +265,15 @@ message("Saved annotated Seurat object: ", annot_path)
 for (nm in names(preds)) {
   key <- gsub("[.]", "_", nm)
   pred <- preds[[nm]]
+  if (!is.null(attr(pred, "max_score_vec"))) {
+    score_vec <- attr(pred, "max_score_vec")
+  } else {
+    score_vec <- apply(pred$scores, 1, max, na.rm = TRUE)
+  }
   per_cell <- data.frame(
     cell_barcode = rownames(pred),
     label = pred$labels,
-    score = apply(pred$scores, 1, max, na.rm = TRUE),
+    score = score_vec,
     stringsAsFactors = FALSE
   )
   utils::write.csv(
@@ -278,7 +324,11 @@ summary_lines <- c(
   paste0("Seurat input: ", opts$seurat),
   paste0("Output dir:  ", normalizePath(opts$output)),
   paste0("Default level assigned to `cell_type`: ", opts$`default-level`),
-  paste0("`individual` column sourced from: ", opts$`individual-col`)
+  paste0("`individual` column sourced from: ", opts$`individual-col`),
+  paste0("Cluster column: ", ifelse(nzchar(opts$`cluster-col`), opts$`cluster-col`, "<cell-level>")),
+  paste0("Levels evaluated: ", opts$levels),
+  paste0("Fine-tune: ", opts$`fine-tune`, "; prune: ", opts$prune),
+  paste0("BiocParallel: ", opts$`bp-type`, " (ncores=", opts$ncores, ")")
 )
 writeLines(summary_lines, summary_file)
 message("Summary written to: ", summary_file)
