@@ -44,13 +44,25 @@ message("Loading Seurat object: ", opts$seurat)
 seu <- readRDS(opts$seurat)
 DefaultAssay(seu) <- opts$assay
 
+# Join layered assays (Seurat v5 multi-sample) into a single counts layer for downstream conversion
+layer_names <- tryCatch(Layers(seu[[opts$assay]]), error = function(e) character(0))
+if (length(layer_names) > 0 && any(grepl("^counts[.]", layer_names))) {
+  message("Joining layered assay '", opts$assay, "' into a single counts matrix for SingleR ...")
+  seu <- Seurat::JoinLayers(seu, assay = opts$assay)
+  DefaultAssay(seu) <- opts$assay
+}
+
 to_sce <- function(seu, assay = "RNA") {
   sce <- tryCatch({
-    as.SingleCellExperiment(seu, assay = assay)
+    as.SingleCellExperiment(seu)
   }, error = function(e) NULL)
 
   if (is.null(sce)) {
-    counts <- Seurat::GetAssayData(seu[[assay]], layer = "counts")
+    counts <- tryCatch({
+      Seurat::GetAssayData(seu[[assay]], layer = "counts")
+    }, error = function(e) {
+      Seurat::GetAssayData(seu[[assay]], slot = "counts")
+    })
     sce <- SingleCellExperiment(assays = list(counts = as.matrix(counts)))
     colData(sce) <- DataFrame(seu@meta.data)
   }
