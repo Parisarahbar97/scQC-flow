@@ -20,9 +20,20 @@ option_list <- list(
   make_option("--individual-col", type = "character", default = "Sample_ID",
               help = "Meta-data column copied into `individual` [default %default]"),
   make_option("--ncores", type = "integer", default = 1L,
-              help = "Cores for SingleR (use 1 inside most containers)"),
+              help = "Cores for SingleR / BiocParallel"),
   make_option("--assay", type = "character", default = "RNA",
-              help = "Seurat assay to operate on [default %default]")
+              help = "Seurat assay to operate on [default %default]"),
+  make_option("--cluster-col", type = "character", default = "harmony_leiden",
+              help = "Meta-data column for cluster-level SingleR; set to '' to disable [default %default]"),
+  make_option("--levels", type = "character",
+              default = "cell.type2,superfine.cell.class,fine.cell.class,mid.cell.class,broad.cell.class",
+              help = "Comma-separated annotation levels to run [default %default]"),
+  make_option("--fine-tune", action = "store_true", default = FALSE,
+              help = "Enable SingleR fine-tuning (slower) [default %default]"),
+  make_option("--prune", action = "store_true", default = TRUE,
+              help = "Enable SingleR pruning [default %default]"),
+  make_option("--bp-type", type = "character", default = "multicore",
+              help = "BiocParallel backend (multicore|snow) [default %default]")
 )
 
 parser <- OptionParser(
