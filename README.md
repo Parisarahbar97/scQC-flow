@@ -160,6 +160,33 @@ Outputs written to `--output` (e.g. `/home/pr422/RDS/live/Users/Parisa/EPILEP/ha
 - UMAP PNGs coloured by clusters, cohort, and sample
 - `integration_summary.txt` logging key parameters
 
+### SingleR cell-type annotation
+
+`scripts/singler_annotation.R` augments the integrated Seurat object with SingleR predictions using the `humanHippocampus2024` reference (all five annotation granularities). All outputs land in `/home/pr422/RDS/live/Users/Parisa/EPILEP/singleR_annotation` with a single container call:
+
+```bash
+docker run --rm \
+  -v /home/pr422/RDS/live/Users/Parisa/scQC-flow:/workspace \
+  -v /home/pr422/RDS/live/Users/Parisa/EPILEP:/data \
+  -w /workspace \
+  ghcr.io/johnsonlab-ic/landmark-sc_image:with-scanpy \
+  bash -lc 'Rscript -e "if (!requireNamespace(\"BiocManager\", quietly=TRUE)) install.packages(\"BiocManager\", repos=\"https://cloud.r-project.org\"); \
+                    BiocManager::install(c(\"SingleR\",\"SummarizedExperiment\",\"SingleCellExperiment\",\"scuttle\",\"ExperimentHub\",\"humanHippocampus2024\"), ask=FALSE, update=FALSE); \
+                    install.packages(\"optparse\", repos=\"https://cloud.r-project.org\")" && \
+            Rscript scripts/singler_annotation.R \
+              --seurat /data/harmony_integration/integrated_harmony_seurat.rds \
+              --output /data/singleR_annotation \
+              --individual-col Sample_ID \
+              --default-level mid.cell.class \
+              --ncores 1'
+```
+
+Artifacts include:
+- `integrated_with_singleR.rds` (Seurat object with `singler_*` annotations, `cell_type`, `individual`)
+- Per-level label tables (`singleR_cells_*`, `singleR_counts_*`)
+- UMAPs coloured by each annotation level (`umap_singler_*`)
+- `singleR_summary.txt` documenting parameters
+
 ---
 
 ## ⚠️ Notes & Warnings
