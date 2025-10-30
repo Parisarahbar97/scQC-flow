@@ -48,7 +48,7 @@ DefaultAssay(seu) <- opts$assay
 layer_names <- tryCatch(Layers(seu[[opts$assay]]), error = function(e) character(0))
 if (length(layer_names) > 0 && any(grepl("^counts[.]", layer_names))) {
   message("Joining layered assay '", opts$assay, "' into a single counts matrix for SingleR ...")
-  seu <- Seurat::JoinLayers(seu, assay = opts$assay)
+  seu <- SeuratObject::JoinLayers(seu, assay = opts$assay)
   DefaultAssay(seu) <- opts$assay
 }
 
