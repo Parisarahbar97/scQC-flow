@@ -292,6 +292,18 @@ for (nm in names(preds)) {
   )
 
   if (!is.null(cluster_vec) && !is.null(pred$cluster_result)) {
+    cl_map <- data.frame(
+      cluster_id = rownames(pred$cluster_result),
+      label = pred$cluster_result$labels,
+      max_score = apply(pred$cluster_result$scores, 1, max, na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+    utils::write.csv(
+      cl_map,
+      file = file.path(opts$output, paste0("singleR_cluster_labels_", key, ".csv")),
+      row.names = FALSE
+    )
+
     cl_counts <- as.data.frame(sort(table(pred$cluster_result$labels), decreasing = TRUE))
     colnames(cl_counts) <- c("cluster_label", "n_clusters")
     utils::write.csv(
@@ -314,7 +326,9 @@ if ("umap" %in% Reductions(seu)) {
       seu,
       reduction = "umap",
       group.by = coln,
-      label = FALSE,
+      label = TRUE,
+      label.size = 3,
+      repel = TRUE,
       raster = TRUE
     ) +
       ggtitle(paste0("UMAP: SingleR ", nm)) +
