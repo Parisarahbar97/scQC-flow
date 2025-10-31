@@ -195,7 +195,7 @@ expand_cluster_result <- function(pred, cluster_vec) {
   list(labels = per_cell_labels, scores = per_cell_scores)
 }
 
-p preds <- list()
+preds <- list()
 for (col in label_cols) {
   message("Running SingleR for level: ", col)
   ref_labels <- SummarizedExperiment::colData(sce_ref_al)[[col]]
@@ -238,6 +238,7 @@ for (col in names(preds)) {
   key <- gsub("[.]", "_", col)
   seu <- add_pred_to_meta(seu, preds[[col]], key)
 }
+
 
 # ----------------------------------------------------------------------
 # Ensure required meta columns
@@ -324,6 +325,7 @@ if ("umap" %in% Reductions(seu)) {
 } else {
   message("UMAP reduction not found; skipping UMAP plots.")
 }
+
 
 # ----------------------------------------------------------------------
 # Summary log
