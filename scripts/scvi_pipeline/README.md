@@ -54,16 +54,16 @@ Outputs: `outputs_2/adata_scvi_TM2k_integrated.h5ad`, UMAP plots under
 
 ```bash
 python scripts/scvi_pipeline/05_run_scanvi.py \
-  --reference /mnt/data/pr422/projects/epilep/outputs/scanvi/ref_LIBD_hippocampus_snRNA.h5ad \
+  --reference /rds/general/user/pr422/projects/puklandmarkproject/live/Users/Parisa/EPILEP/scvi_integration/outputs_2/scanvi/scanvi_ref/ref_LIBD_hippocampus_snRNA.h5ad \
   --query /rds/general/user/pr422/projects/puklandmarkproject/live/Users/Parisa/EPILEP/scvi_integration/outputs_2/adata_hvg2k_TM.h5ad \
   --out-root /rds/general/user/pr422/projects/puklandmarkproject/live/Users/Parisa/EPILEP/scvi_integration \
+  --out-subdir scanvi_31oct \
   --labels-key cell.type2
 ```
 
-Outputs: `outputs_2/scanvi/query_scanvi_annotated.h5ad`, joint object,
-confidence summary, and UMAP/diagnostic plots in
-`outputs_2/scanvi/plots/`.
+Outputs: `outputs_2/scanvi/scanvi_31oct/query_scanvi_annotated.h5ad`, joint
+object, confidence summary, and UMAP/diagnostic plots in
+`outputs_2/scanvi/scanvi_31oct/plots/`.
 
 Feel free to tweak epochs, latent dimensions, or UMAP/Leiden settings via the
 optional CLI flags provided in each script.
-
