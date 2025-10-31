@@ -48,6 +48,7 @@ def main():
     ap.add_argument("--reference", type=Path, required=True)
     ap.add_argument("--query", type=Path, required=True)
     ap.add_argument("--out-root", type=Path, required=True)
+    ap.add_argument("--out-subdir", type=str, default="scanvi")
     ap.add_argument("--labels-key", type=str, default="cell.type2")
     ap.add_argument("--unlabeled-category", type=str, default="Unknown")
     ap.add_argument("--n-layers", type=int, default=2)
@@ -123,7 +124,7 @@ def main():
     sc.pp.neighbors(adata, use_rep="X_scANVI")
     sc.tl.umap(adata, min_dist=args.umap_min_dist)
 
-    out_dir = Path(args.out_root) / "outputs_2" / "scanvi"
+    out_dir = Path(args.out_root) / "outputs_2" / "scanvi" / args.out_subdir
     plots_dir = out_dir / "plots"
     out_dir.mkdir(parents=True, exist_ok=True)
     plots_dir.mkdir(parents=True, exist_ok=True)
@@ -173,4 +174,3 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
