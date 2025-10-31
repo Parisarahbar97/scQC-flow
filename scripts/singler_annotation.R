@@ -195,7 +195,7 @@ expand_cluster_result <- function(pred, cluster_vec) {
   list(labels = per_cell_labels, scores = per_cell_scores)
 }
 
-preds <- list()
+p preds <- list()
 for (col in label_cols) {
   message("Running SingleR for level: ", col)
   ref_labels <- SummarizedExperiment::colData(sce_ref_al)[[col]]
@@ -211,21 +211,25 @@ for (col in label_cols) {
   )
   if (!is.null(cluster_vec)) {
     expanded <- expand_cluster_result(pred, cluster_vec)
-    pred$labels <- expanded$labels
-    attr(pred, "max_score_vec") <- expanded$scores
-    rownames(pred) <- colnames(sce_test_al)
+    preds[[col]] <- list(
+      labels = expanded$labels,
+      score_vec = expanded$scores,
+      cluster_result = pred
+    )
+  } else {
+    score_vec <- apply(pred$scores, 1, max, na.rm = TRUE)
+    preds[[col]] <- list(
+      labels = pred$labels,
+      score_vec = score_vec,
+      cluster_result = pred
+    )
   }
-  preds[[col]] <- pred
 }
 
-add_pred_to_meta <- function(seu, pred, prefix) {
+add_pred_to_meta <- function(seu, pred_list, prefix) {
   md <- seu@meta.data
-  md[[paste0("singler_", prefix)]] <- pred$labels
-  if (!is.null(attr(pred, "max_score_vec"))) {
-    md[[paste0("singler_", prefix, "_score")]] <- attr(pred, "max_score_vec")
-  } else {
-    md[[paste0("singler_", prefix, "_score")]] <- apply(pred$scores, 1, max, na.rm = TRUE)
-  }
+  md[[paste0("singler_", prefix)]] <- pred_list$labels
+  md[[paste0("singler_", prefix, "_score")]] <- pred_list$score_vec
   seu@meta.data <- md
   seu
 }
@@ -265,13 +269,9 @@ message("Saved annotated Seurat object: ", annot_path)
 for (nm in names(preds)) {
   key <- gsub("[.]", "_", nm)
   pred <- preds[[nm]]
-  if (!is.null(attr(pred, "max_score_vec"))) {
-    score_vec <- attr(pred, "max_score_vec")
-  } else {
-    score_vec <- apply(pred$scores, 1, max, na.rm = TRUE)
-  }
+  score_vec <- pred$score_vec
   per_cell <- data.frame(
-    cell_barcode = rownames(pred),
+    cell_barcode = rownames(seu@meta.data),
     label = pred$labels,
     score = score_vec,
     stringsAsFactors = FALSE
@@ -289,6 +289,16 @@ for (nm in names(preds)) {
     file = file.path(opts$output, paste0("singleR_counts_", key, ".csv")),
     row.names = FALSE
   )
+
+  if (!is.null(cluster_vec) && !is.null(pred$cluster_result)) {
+    cl_counts <- as.data.frame(sort(table(pred$cluster_result$labels), decreasing = TRUE))
+    colnames(cl_counts) <- c("cluster_label", "n_clusters")
+    utils::write.csv(
+      cl_counts,
+      file = file.path(opts$output, paste0("singleR_cluster_counts_", key, ".csv")),
+      row.names = FALSE
+    )
+  }
 }
 
 # ----------------------------------------------------------------------
