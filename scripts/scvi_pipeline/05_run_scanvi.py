@@ -117,9 +117,14 @@ def main():
 
     adata.obsm["X_scANVI"] = scanvi_model.get_latent_representation()
 
-    preds, conf = scanvi_model.predict(soft=True, return_proba=True)
+    preds = scanvi_model.predict()
+    prob_matrix = scanvi_model.predict(soft=True, return_numpy=True)
     adata.obs["scanvi_pred"] = preds
-    adata.obs["scanvi_confidence"] = conf.max(axis=1)
+    adata.obs["scanvi_confidence"] = prob_matrix.max(axis=1)
+    # store full probability matrix for downstream review
+    label_categories = scanvi_model.adata_manager.get_state_registry("labels").categorical_mapping
+    adata.obsm["scanvi_probabilities"] = prob_matrix
+    adata.uns["scanvi_probability_labels"] = list(label_categories)
 
     sc.pp.neighbors(adata, use_rep="X_scANVI")
     sc.tl.umap(adata, min_dist=args.umap_min_dist)
