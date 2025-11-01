@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run dsc-pileup for D2A using the 1000G site panel copy.
+# Run dsc-pileup for D2A using the prepared 1000G site panel.
 
 set -euo pipefail
 
@@ -29,4 +29,3 @@ docker run --rm -u "$(id -u)":"$(id -g)" \
     --out        "$OUTPFX"
 
 echo "Pileup written: ${OUTPFX}.{plp,var,umi,cel}.gz"
-

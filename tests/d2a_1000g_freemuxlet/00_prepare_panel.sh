@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Prepare a bgzipped + indexed 1000G VCF copy in the test output folder.
-# Does not modify the original panel.
+# Prepare a bgzipped + indexed 1000G VCF copy for the D2A test run.
 
 set -euo pipefail
 
@@ -15,17 +14,15 @@ docker run --rm -u "$(id -u)":"$(id -g)" -v "$HOST":"$HOST" parisa/genotype:2.6 
   set -euo pipefail
   OUTVCF="'$OUTVCF'"; PANEL="'$PANEL'"
   if [ ! -f "$PANEL" ]; then
-    echo "Missing 1000G VCF: $PANEL" >&2; exit 1
+    echo "Missing 1000G VCF: $PANEL" >&2
+    exit 1
   fi
-  # Quick contig sanity check (expect chr-style for 10x BAM)
   if ! bcftools view -h "$PANEL" | grep -q "^##contig=<ID=chr"; then
     echo "WARN: 1000G VCF header does not show chr-style contigs; BAM uses chr*." >&2
     echo "      Adjust contig names before running pileup if needed." >&2
   fi
-  # Compress and index into OUTDIR
   bgzip -c "$PANEL" > "$OUTVCF"
   tabix -f -p vcf "$OUTVCF"
   bcftools index -f "$OUTVCF"
   echo "Prepared: $OUTVCF"
 '
-
